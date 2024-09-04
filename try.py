@@ -9,8 +9,7 @@
 
 
 from PyQt5 import QtCore, QtGui, QtWidgets
-
-
+import mouse, keyboard, pickle,os
 class Ui_MainWindow(object):
     def setupUi(self, MainWindow):
         MainWindow.setObjectName("MainWindow")
@@ -23,6 +22,7 @@ class Ui_MainWindow(object):
         MainWindow.setBaseSize(QtCore.QSize(412, 150))
         MainWindow.setToolTipDuration(0)
         MainWindow.setAnimated(True)
+        self.events=[]
         self.centralwidget = QtWidgets.QWidget(MainWindow)
         self.centralwidget.setObjectName("centralwidget")
         self.horizontalLayoutWidget = QtWidgets.QWidget(self.centralwidget)
@@ -38,6 +38,7 @@ class Ui_MainWindow(object):
         self.pushButton_2.setLayoutDirection(QtCore.Qt.LeftToRight)
         self.pushButton_2.setAutoFillBackground(False)
         self.pushButton_2.setObjectName("pushButton_2")
+        self.pushButton_2.clicked.connect(self.play)
         self.horizontalLayout.addWidget(self.pushButton_2)
         self.pushButton_3 = QtWidgets.QPushButton(self.horizontalLayoutWidget)
         self.pushButton_3.setAutoDefault(False)
@@ -61,24 +62,65 @@ class Ui_MainWindow(object):
         self.verticalLayout.setObjectName("verticalLayout")
         self.pushButton_4 = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.pushButton_4.setObjectName("pushButton_4")
+        self.pushButton.clicked.connect(self.chose_file)
         self.verticalLayout.addWidget(self.pushButton_4)
         self.pushButton_5 = QtWidgets.QPushButton(self.verticalLayoutWidget)
         self.pushButton_5.setObjectName("pushButton_5")
+        self.pushButton_3.clicked.connect(self.record)
         self.verticalLayout.addWidget(self.pushButton_5)
         MainWindow.setCentralWidget(self.centralwidget)
 
         self.retranslateUi(MainWindow)
-        QtCore.QMetaObject.connectSlotsByName(MainWindow)
+        #QtCore.QMetaObject.connectSlotsByName(MainWindow)
 
     def retranslateUi(self, MainWindow):
         _translate = QtCore.QCoreApplication.translate
         MainWindow.setWindowTitle(_translate("MainWindow", "MainWindow"))
         self.pushButton_2.setText(_translate("MainWindow", "►"))
-        self.pushButton_3.setText(_translate("MainWindow", "🔴"))
+        self.pushButton_3.setText(_translate("MainWindow", "🔴, для отмены записи F9"))
         self.pushButton.setText(_translate("MainWindow", "📁"))
         self.pushButton_4.setText(_translate("MainWindow", "Поддержка"))
         self.pushButton_5.setText(_translate("MainWindow", "Видео-гайд по приложению"))
+    def record(self):
+        self.events=[]
+        mouse.hook(self.events.append)
+        keyboard.wait('F9')
+        mouse.unhook(self.events.append)
+        text, ok =QtWidgets.QInputDialog.getText(MainWindow,'Название файла','Введите название файла записи')
+        if ok:
+            with open (f'{text}.pkl','wb') as file:
+                pickle.dump(self.events,file)
+            self.label.setText(f'Выбран шаблон {text}')
+        else:
+            self.label.setText('Шаблон не сохранен')
+    def chose_file(self):
+        name=QtWidgets.QFileDialog.getOpenFileName(MainWindow,'Выберите запись с форматом pkl',os.path.dirname(__file__))
+        name=name[0]
+        if name=='':
+            return
+        path=name
+        name=(name[name.rfind('/')+1:])
+        self.label.setText(f'Выбран шаблон {name}')
+        with open(path,'rb') as file:
+            self.events=pickle.load(file)
+        
+    def play(self):
+        sss=0
+        de=[]
+        for i in self.events:
+            de.append(i)
+            sss+=1
+            if sss%3==0:    
+                if not keyboard.is_pressed('F9'):
+                    mouse.play(de)
+                    de=[]
+                else:
+                    break
+        
 
+
+        
+        
 
 if __name__ == "__main__":
     import sys
